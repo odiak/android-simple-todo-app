@@ -1,6 +1,12 @@
 package net.odiak.simpletodoapp;
 
-public class Task {
+import android.provider.BaseColumns;
+
+public class Task implements BaseColumns {
+    public static final String TABLE_NAME = "tasks";
+    public static final String COLUMN_TEXT = "text";
+    public static final String COLUMN_DONE = "done";
+
     private long mId;
     private String mText;
     private boolean mDone;

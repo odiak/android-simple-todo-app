@@ -22,7 +22,7 @@ public class MainActivity extends AppCompatActivity {
     private EditText mEditText;
     private ListView mListView;
     private TasksAdapter mTaskAdapter;
-    private TodoContract.TodoDbHelper mDbHelper;
+    private TodoDbHelper mDbHelper;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -61,29 +61,29 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        mDbHelper = new TodoContract.TodoDbHelper(this);
+        mDbHelper = new TodoDbHelper(this);
 
         SQLiteDatabase db = mDbHelper.getWritableDatabase();
         String[] projection = {
-                TodoContract.Tasks._ID,
-                TodoContract.Tasks.COLUMN_TEXT,
-                TodoContract.Tasks.COLUMN_DONE,
+                Task._ID,
+                Task.COLUMN_TEXT,
+                Task.COLUMN_DONE,
         };
         Cursor c = db.query(
-                TodoContract.Tasks.TABLE_NAME,
+                Task.TABLE_NAME,
                 projection,
                 null,
                 null,
                 null,
                 null,
-                TodoContract.Tasks._ID
+                Task._ID
         );
 
         TasksAdapter adapter = (TasksAdapter) mListView.getAdapter();
         while (c.moveToNext()) {
-            String text = c.getString(c.getColumnIndexOrThrow(TodoContract.Tasks.COLUMN_TEXT));
-            long id = c.getLong(c.getColumnIndexOrThrow(TodoContract.Tasks._ID));
-            boolean done = c.getInt(c.getColumnIndexOrThrow(TodoContract.Tasks.COLUMN_DONE)) != 0;
+            String text = c.getString(c.getColumnIndexOrThrow(Task.COLUMN_TEXT));
+            long id = c.getLong(c.getColumnIndexOrThrow(Task._ID));
+            boolean done = c.getInt(c.getColumnIndexOrThrow(Task.COLUMN_DONE)) != 0;
             Task task = new Task()
                     .setId(id)
                     .setText(text)
@@ -103,9 +103,9 @@ public class MainActivity extends AppCompatActivity {
 
             SQLiteDatabase db = mDbHelper.getReadableDatabase();
             ContentValues values = new ContentValues();
-            values.put(TodoContract.Tasks.COLUMN_TEXT, task.getText());
-            values.put(TodoContract.Tasks.COLUMN_DONE, task.getDone());
-            long taskId = db.insert(TodoContract.Tasks.TABLE_NAME, null, values);
+            values.put(Task.COLUMN_TEXT, task.getText());
+            values.put(Task.COLUMN_DONE, task.getDone());
+            long taskId = db.insert(Task.TABLE_NAME, null, values);
             task.setId(taskId);
             db.close();
         }
@@ -119,12 +119,12 @@ public class MainActivity extends AppCompatActivity {
 
         SQLiteDatabase db = mDbHelper.getWritableDatabase();
         ContentValues values = new ContentValues();
-        values.put(TodoContract.Tasks.COLUMN_DONE, task.getDone());
+        values.put(Task.COLUMN_DONE, task.getDone());
 
         db.update(
-                TodoContract.Tasks.TABLE_NAME,
+                Task.TABLE_NAME,
                 values,
-                String.format("%s = ?", TodoContract.Tasks._ID),
+                String.format("%s = ?", Task._ID),
                 new String[]{"" + task.getId()}
         );
         db.close();
@@ -170,8 +170,8 @@ public class MainActivity extends AppCompatActivity {
         }
         SQLiteDatabase db = mDbHelper.getWritableDatabase();
         db.delete(
-                TodoContract.Tasks.TABLE_NAME,
-                String.format("%s IN (%s)", TodoContract.Tasks._ID, idsStr),
+                Task.TABLE_NAME,
+                String.format("%s IN (%s)", Task._ID, idsStr),
                 new String[]{}
         );
         db.close();
