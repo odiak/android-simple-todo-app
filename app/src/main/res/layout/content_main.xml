@@ -25,16 +25,24 @@
     <Button
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Send"
+        android:text="add"
         android:id="@+id/button"
         android:layout_alignBottom="@id/editText"
         android:layout_alignParentRight="true"
         android:layout_alignParentEnd="true" />
 
+    <Button
+        android:id="@+id/clearButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="clear completed tasks"
+        android:layout_alignParentBottom="true" />
+
     <ListView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:id="@+id/listView"
-        android:layout_below="@id/editText" />
+        android:layout_below="@id/editText"
+        android:layout_above="@id/clearButton" />
 
 </RelativeLayout>

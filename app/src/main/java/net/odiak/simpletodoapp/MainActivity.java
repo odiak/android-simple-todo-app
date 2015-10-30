@@ -1,6 +1,8 @@
 package net.odiak.simpletodoapp;
 
+import android.app.AlertDialog;
 import android.content.ContentValues;
+import android.content.DialogInterface;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
@@ -11,6 +13,8 @@ import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
+
+import java.util.ArrayList;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -49,6 +53,14 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        Button clearButton = (Button) findViewById(R.id.clearButton);
+        clearButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                onClearButtonClick();
+            }
+        });
+
         mDbHelper = new TodoContract.TodoDbHelper(this);
 
         SQLiteDatabase db = mDbHelper.getWritableDatabase();
@@ -57,7 +69,6 @@ public class MainActivity extends AppCompatActivity {
                 TodoContract.Tasks.COLUMN_TEXT,
                 TodoContract.Tasks.COLUMN_DONE,
         };
-        String order = String.format("%s DESC", TodoContract.Tasks._ID);
         Cursor c = db.query(
                 TodoContract.Tasks.TABLE_NAME,
                 projection,
@@ -65,7 +76,7 @@ public class MainActivity extends AppCompatActivity {
                 null,
                 null,
                 null,
-                order
+                TodoContract.Tasks._ID
         );
 
         TasksAdapter adapter = (TasksAdapter) mListView.getAdapter();
@@ -115,6 +126,53 @@ public class MainActivity extends AppCompatActivity {
                 values,
                 String.format("%s = ?", TodoContract.Tasks._ID),
                 new String[]{"" + task.getId()}
+        );
+        db.close();
+    }
+
+    private void onClearButtonClick() {
+        new AlertDialog.Builder(this)
+                .setTitle("Confirm")
+                .setMessage("Are you sure to clear all completed tasks?")
+                .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        removeCompletedTasks();
+                    }
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    private void removeCompletedTasks() {
+        ArrayList<Long> removedTaskIds = new ArrayList<>();
+        for (int i = 0, count = mTaskAdapter.getCount(); i < count; ) {
+            Task task = mTaskAdapter.getItem(i);
+            if (task.getDone()) {
+                removedTaskIds.add(task.getId());
+                mTaskAdapter.remove(task);
+                count--;
+            } else {
+                i++;
+            }
+        }
+        if (removedTaskIds.isEmpty()) return;
+
+        boolean first = true;
+        String idsStr = "";
+        for (long id: removedTaskIds) {
+            if (first) {
+                first = false;
+            } else {
+                idsStr += ",";
+            }
+            idsStr += "" + id;
+        }
+        SQLiteDatabase db = mDbHelper.getWritableDatabase();
+        db.delete(
+                TodoContract.Tasks.TABLE_NAME,
+                String.format("%s IN (%s)", TodoContract.Tasks._ID, idsStr),
+                new String[]{}
         );
         db.close();
     }
