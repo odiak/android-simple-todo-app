@@ -5,7 +5,7 @@ public class Task {
     private String mText;
     private boolean mDone;
 
-    public Task (String text, boolean done, long id) {
+    public Task(String text, boolean done, long id) {
         mId = id;
         mText = text;
         mDone = done;
@@ -15,16 +15,21 @@ public class Task {
         this("", false, 0);
     }
 
-    public long getId () {
-        return System.identityHashCode(this);
+    public long getId() {
+        return mId;
     }
 
-    public String getText () {
+    public String getText() {
         return mText;
     }
 
-    public boolean getDone () {
+    public boolean getDone() {
         return mDone;
+    }
+
+    public Task setId(long id) {
+        mId = id;
+        return this;
     }
 
     public Task setText(String text) {

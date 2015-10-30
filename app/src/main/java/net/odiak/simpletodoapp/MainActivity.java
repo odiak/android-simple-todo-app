@@ -1,5 +1,8 @@
 package net.odiak.simpletodoapp;
 
+import android.content.ContentValues;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
@@ -9,14 +12,13 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
 
-import java.util.ArrayList;
-import java.util.Comparator;
 
-public class MainActivity extends AppCompatActivity implements AdapterView.OnItemClickListener {
+public class MainActivity extends AppCompatActivity {
 
     private EditText mEditText;
-    private Button mButton;
     private ListView mListView;
+    private TasksAdapter mTaskAdapter;
+    private TodoContract.TodoDbHelper mDbHelper;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -26,36 +28,94 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         setSupportActionBar(toolbar);
 
         mEditText = (EditText) findViewById(R.id.editText);
-        mButton = (Button) findViewById(R.id.button);
         mListView = (ListView) findViewById(R.id.listView);
 
-        final TasksAdapter adapter = new TasksAdapter(this);
-        mListView.setAdapter(adapter);
+        mTaskAdapter = new TasksAdapter(this);
+        mListView.setAdapter(mTaskAdapter);
 
-        adapter.addAll(
-                new Task().setText("ほげ"),
-                new Task().setText("ふが"),
-                new Task().setText("ピヨ"));
 
-        mButton.setOnClickListener(new View.OnClickListener() {
+        mListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
-            public void onClick(View view) {
-                String text = mEditText.getText().toString();
-                if (!text.isEmpty()) {
-                    mEditText.setText("");
-                    adapter.insert(new Task().setText(text), 0);
-                }
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                onListItemClick(position);
             }
         });
 
-        mListView.setOnItemClickListener(this);
+        Button button = (Button) findViewById(R.id.button);
+        button.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                onButtonClick();
+            }
+        });
+
+        mDbHelper = new TodoContract.TodoDbHelper(this);
+
+        SQLiteDatabase db = mDbHelper.getWritableDatabase();
+        String[] projection = {
+                TodoContract.Tasks._ID,
+                TodoContract.Tasks.COLUMN_TEXT,
+                TodoContract.Tasks.COLUMN_DONE,
+        };
+        String order = String.format("%s DESC", TodoContract.Tasks._ID);
+        Cursor c = db.query(
+                TodoContract.Tasks.TABLE_NAME,
+                projection,
+                null,
+                null,
+                null,
+                null,
+                order
+        );
+
+        TasksAdapter adapter = (TasksAdapter) mListView.getAdapter();
+        while (c.moveToNext()) {
+            String text = c.getString(c.getColumnIndexOrThrow(TodoContract.Tasks.COLUMN_TEXT));
+            long id = c.getLong(c.getColumnIndexOrThrow(TodoContract.Tasks._ID));
+            boolean done = c.getInt(c.getColumnIndexOrThrow(TodoContract.Tasks.COLUMN_DONE)) != 0;
+            Task task = new Task()
+                    .setId(id)
+                    .setText(text)
+                    .setDone(done);
+            adapter.insert(task, 0);
+        }
+        c.close();
+        db.close();
     }
 
-    @Override
-    public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+    private void onButtonClick () {
+        String text = mEditText.getText().toString();
+        if (!text.isEmpty()) {
+            mEditText.setText("");
+            Task task = new Task().setText(text);
+            mTaskAdapter.insert(task, 0);
+
+            SQLiteDatabase db = mDbHelper.getReadableDatabase();
+            ContentValues values = new ContentValues();
+            values.put(TodoContract.Tasks.COLUMN_TEXT, task.getText());
+            values.put(TodoContract.Tasks.COLUMN_DONE, task.getDone());
+            long taskId = db.insert(TodoContract.Tasks.TABLE_NAME, null, values);
+            task.setId(taskId);
+            db.close();
+        }
+    }
+
+    private void onListItemClick (int position) {
         TasksAdapter adapter = (TasksAdapter) mListView.getAdapter();
         Task task = adapter.getItem(position);
         task.toggleDone();
         adapter.notifyDataSetChanged();
+
+        SQLiteDatabase db = mDbHelper.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put(TodoContract.Tasks.COLUMN_DONE, task.getDone());
+
+        db.update(
+                TodoContract.Tasks.TABLE_NAME,
+                values,
+                String.format("%s = ?", TodoContract.Tasks._ID),
+                new String[]{"" + task.getId()}
+        );
+        db.close();
     }
 }
